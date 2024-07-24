@@ -5,15 +5,21 @@ from passlib.context import CryptContext
 import utils.data_type as data_type
 import config.database as database
 from jose import JWTError,jwt
+from tensorflow.keras.preprocessing import image as tkimg
+from tensorflow.keras.models import load_model
+import tensorflow as tf
+import numpy as np
+
 
 
 SECRET_KEY="d742e68876723b8ba6fae9c1c33c12e5a0023fb6c7a07158daac74fe08c2deeb30060af11979caafdc4afca172184b0138bf6029180e23da80d21e00ed4f7d4d"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60*24*7
 ALGORITHM = "HS256"
 
-
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+class_names = ['husky', 'beagle', 'rottweiler', 'german-shepherd', 'dalmatian', 'poodle', 'bulldog', 'labrador-retriever']
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
@@ -32,8 +38,6 @@ def get_password_hash(password):
     return pwd_context.hash(password)
 
 
-class_names = ['husky', 'beagle', 'rottweiler', 'german-shepherd', 'dalmatian', 'poodle', 'bulldog', 'labrador-retriever']
-
 def preprocess_image(image_path, target_size=(224, 224)):
     img = tkimg.load_img(image_path, target_size=target_size)
     img_array = tkimg.img_to_array(img)
@@ -47,10 +51,9 @@ def predict_breed(img_path):
     img_array = preprocess_image(img_path)
     predictions = model.predict(img_array)
     predicted_class = np.argmax(predictions, axis=1)
-    if class_names[predicted_class[0]]:
-        return class_names[predicted_class[0]]
-    else:
-        return "Not dog"
+    print(predicted_class)
+    return class_names[predicted_class[0]]
+
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
     credentials_exception = HTTPException(
